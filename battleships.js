@@ -24,7 +24,8 @@ function play(){
   console.log(ship);
   // player1.board.printBoard();
   // player2.board.printBoard();
-  player1.rotateShip(player1.board.cloneBoard(new Board(BOARD_SIZE)), 0, player1);
+  let clone = player1.board.cloneBoard(new Board(BOARD_SIZE))
+  player1.rotateShip(clone, 2, player1, player1.rotateShip1);
 
 }
 
