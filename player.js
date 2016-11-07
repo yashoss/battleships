@@ -1,6 +1,6 @@
 var Board = require('./board.js');
-var keypress = require('keypress');
-
+var readlineSync = require('readline-sync');
+var alphanumeric = {a: 0, b: 1, c: 2, d: 3, e: 4, f: 5, g: 6, h: 7, i: 8, j: 9}
 class Player{
 
   constructor(name, board, ships){
@@ -10,227 +10,96 @@ class Player{
 
   }
 
-  rotateShip1(boardCopy, ship, player, key){
-    if(key.name === 'return') {
-      //call moveShip
-      process.stdin.pause();
-      player.rotateShip(boardCopy, ship.length - 2, player, player.moveShip)
-    }else if(key.name === 'v'){
-      //make ship vertical
-      if(ship.direction === "hor"){
-        ship.direction = "vert";
-        for(let i=1; i<ship.length; ++i){
-          boardCopy.grid[i][0] = boardCopy.grid[0][i];
-          boardCopy.grid[0][i] = player.board.grid[0][i];
-          ship.segments[i].pos = [i, 0];
-        }
-        clearConsole();
-        boardCopy.printBoard();
-      }else{
-        //do nothing
+  placeShips(player){
+    let board = this.board;
+    let boardCopy = board.cloneBoard(new Board(board.size));
+    for(let shipIdx = 0; shipIdx < this.ships.length; ++shipIdx ){
+      let ship = this.ships[shipIdx];
+      for(let j in ship.segments){
+        let segment = ship.segments[j];
+        let pos = segment.pos;
+        boardCopy.grid[0][j] = segment;
       }
-    }else if(key.name === 'h'){
-      //make ship horizontal
-      if(ship.direction === "vert"){
-        ship.direction = "hor";
-        for(let i=1; i<ship.length; ++i){
-          boardCopy.grid[0][i] = boardCopy.grid[i][0];
-          boardCopy.grid[i][0] = player.board.grid[i][0];
-          ship.segments[i].pos = [0, i];
-        }
-        clearConsole();
-        boardCopy.printBoard();
-      }else{
-        //do nothing
+      boardCopy.printBoard();
+      let coords = player.getCoords(player, ship, boardCopy, "head");
+      player.shipOptions(coords, ship, board, boardCopy);
+      boardCopy.printBoard();
+      let coords = player.getCoords(player, ship, boardCopy, "tail");
+    }
+
+  }
+
+  shipOptions(coords, ship, board, boardCopy){
+    let up = true;
+    let down = true;
+    let left = true;
+    let right = true;
+    for(let i in ship.segments){
+      boardCopy[0][i] = board[0][i];
+      if(coords[1] + i > boardCopy.size || boardCopy.grid[coords[0]][coords[1] + i] != false){
+        right = false;
       }
-    }else{
-      console.log("Invalid key");
+      if(coords[1] - i < 0 || boardCopy.grid[coords[0]][coords[1] - i] != false){
+        left = false;
+      }
+      if(coords[0] + i > boardCopy.size || boardCopy.grid[coords[0] + i][coords[1]] != false){
+        down = false;
+      }
+      if(coords[0] - i < 0 || boardCopy.grid[coords[0] - i][coords[1]] != false){
+        up = false;
+      }
+    }
+    if(right){
+      for(let j in ship.segments){
+        boardCopy[coords[0]][coords[1] + j] = ship.segments[j]
+      }
+    }
+    if(left){
+      for(let j in ship.segments){
+        boardCopy[coords[0]][coords[1] - j] = ship.segments[j]
+      }
+    }
+    if(down){
+      for(let j in ship.segments){
+        boardCopy[coords[0] + j][coords[1]] = ship.segments[j]
+      }
+    }
+    if(up){
+      for(let j in ship.segments){
+        boardCopy[coords[0] - j][coords[1]] = ship.segments[j]
+      }
     }
   }
 
-  rotateShip(boardCopy, shipIdx, player, cb){
-    let ship = this.ships[shipIdx];
-    for(let j in ship.segments){
-      let segment = ship.segments[j];
-      let pos = segment.pos;
-      boardCopy.grid[0][j] = segment;
+  getCoords(player, ship, boardCopy, str){
+    let inputString = readlineSync.question("Please enter coordinates for the" + str + "of your ship(e.g. A3): ");
+    console.log(inputString);
+    inputString = inputString.toLowerCase();
+    while(!(player.checkInput(inputString, ship)) ){
+      inputString = readlineSync.question("Please enter valid coordinates for the" + str + "of your ship(e.g. A3): ").toLowerCase();
     }
-    clearConsole();
-    console.log("Pres 'h' to make ship horizontal.");
-    console.log("Pres 'v' to make ship vertical.");
-    console.log("Pres 'enter' to confirm direction.");
-    boardCopy.printBoard();
-    keypress(process.stdin);
-    process.stdin.on('keypress', function (ch, key) {
-      cb(boardCopy, ship, player, key);
-    });
-      process.stdin.setRawMode(true);
-      process.stdin.resume();
+    let coords = [Number(inputString[1]), alphanumeric[inputString[0]]];
+    return coords;
   }
 
-  moveShip(boardCopy, shipIdx, player, key){
-    let ship = shipIdx;
-    clearConsole();
-    console.log("Use the arrow keys to move your ship.");
-    console.log("Press 'enter' to confirm.")
-    boardCopy.printBoard();
-      // console.log('got "keypress"', key);
-      if (key.name === 'return') {
-        //check overlap of segments, place ship, update actual board, get next ship
-        process.stdin.pause();
-        console.log("placed")
-        this.board = boardCopy;
-        this.board.printBoard();
-      }else if(key.name === 'right' && ship.segments[ship.length - 1].pos[1] < player.board.size - 1){
-        //increment segment right then reprint board
-        //replace spaces that were moved with those from original board
+  checkInput(input, ship, boardCopy){
+    let inputCode = input[0].charCodeAt(0);
+    if(input.length == 2 && inputCode >= "a".charCodeAt(0) && inputCode <= Math.floor(this.board.size - 1) + "a".charCodeAt(0) ){
+      if(Number(input[1]) >= 0 && Number(input[1]) < this.board.size){
+        let coords = [Number(input[1]), alphanumeric[input[0]]];
         for(let i in ship.segments){
-          //start from last segment
-          console.log(i);
-          let segment = ship.segments[ship.length - i - 1];
-          let temp = [segment.pos[0], segment.pos[1]];
-          segment.pos[1] += 1;
-          boardCopy.grid[segment.pos[0]][segment.pos[1]] = segment;
-          boardCopy.grid[temp[0]][temp[1]] = player.board.grid[temp[0]][temp[1]];
+          if((coords[1] + i > boardCopy.size || boardCopy.grid[coords[0]][coords[1] + i] != false) &&
+              (coords[1] - i < 0 || boardCopy.grid[coords[0]][coords[1] - i] != false) &&
+                (coords[0] + i > boardCopy.size || boardCopy.grid[coords[0] + i][coords[1]] != false) &&
+                  (coords[0] - i < 0 || boardCopy.grid[coords[0] - i][coords[1]] != false)){
+                    return false;
+                  }
         }
-        clearConsole();
-        boardCopy.printBoard();
-      }else if(key.name === 'left' && ship.segments[0].pos[1] > 0){
-        //increment segments left then reprint board
-        //replace spaces that were moved with those from original board
-        for(let i in ship.segments){
-          let segment = ship.segments[i];
-          let temp = [segment.pos[0], segment.pos[1]];
-          segment.pos[1] -= 1;
-          boardCopy.grid[segment.pos[0]][segment.pos[1]] = segment;
-          boardCopy.grid[temp[0]][temp[1]] = player.board.grid[temp[0]][temp[1]];
-        }
-        clearConsole();
-        boardCopy.printBoard();
-      }else if(key.name === 'down' && ship.segments[ship.length -1].pos[0] < player.board.size - 1){
-        //increment segments down then reprint board
-        //replace spaces that were moved with those from original board
-        for(let i in ship.segments){
-          //start from last segment
-          let segment = ship.segments[ship.length - i - 1];
-          let temp = [segment.pos[0], segment.pos[1]];
-          segment.pos[0] += 1;
-          boardCopy.grid[segment.pos[0]][segment.pos[1]] = segment;
-          boardCopy.grid[temp[0]][temp[1]] = player.board.grid[temp[0]][temp[1]];
-        }
-        clearConsole();
-        boardCopy.printBoard();
-      }else if(key.name === 'up' && ship.segments[0].pos[0] > 0){
-        //increment segments up then reprint board
-        //replace spaces that were moved with those from original board
-        for(let i in ship.segments){
-          //start from last segment
-          let segment = ship.segments[i];
-          let temp = [segment.pos[0], segment.pos[1]];
-          segment.pos[0] -= 1;
-          boardCopy.grid[segment.pos[0]][segment.pos[1]] = segment;
-          boardCopy.grid[temp[0]][temp[1]] = player.board.grid[temp[0]][temp[1]];
-        }
-        clearConsole();
-        boardCopy.printBoard();
-      }else{
-        console.log('These ships are missing that control!')
-        //reprint board
-      };
-
+        return true;
+      }
+    }
+    return false;
   }
-
-  // placeShips(){
-  //   let boardCopy = this.board.cloneBoard(new Board(this.board.size));
-  //   console.log(boardCopy);
-  //   for(let i in this.ships){
-  //     let ship = this.ships[i];
-  //     for(let j in ship.segments){
-  //       let segment = ship.segments[j];
-  //       let pos = segment.pos;
-  //       boardCopy.grid[pos[0]][pos[1]] = ship.segments[j];
-  //     }
-  //     // listen for the "keypress" event
-  //     boardCopy.printBoard();
-  //     boardCopy = function moveShipCB(boardCopy, ship);
-  //   }
-  // }
-  //
-  // moveShip(board, ship){
-  // let ship = this.ships[shipIdx];
-  // clearConsole();
-  // console.log("Use the arrow keys to move your ship.");
-  // console.log("Press 'enter' to confirm.")
-  // boardCopy.printBoard();
-  // keypress(process.stdin);
-  // process.stdin.on('keypress', function (ch, key) {
-  //   // console.log('got "keypress"', key);
-  //   if (key.name === 'return') {
-  //     //check overlap of segments, place ship, update actual board, get next ship
-  //     process.stdin.pause();
-  //     console.log("placed")
-  //     this.board = boardCopy;
-  //     this.board.printBoard();
-  //   }else if(key.name === 'right' && ship.segments[ship.length - 1].pos[1] < player.board.size - 1){
-  //     //increment segment right then reprint board
-  //     //replace spaces that were moved with those from original board
-  //     for(let i in ship.segments){
-  //       //start from last segment
-  //       console.log(i);
-  //       let segment = ship.segments[ship.length - i - 1];
-  //       let temp = segment.pos;
-  //       segment.pos[1] += 1;
-  //       boardCopy.grid[segment.pos[0]][segment.pos[1]] = segment;
-  //       boardCopy.grid[temp[0]][temp[1]] = player.board.grid[temp[0]][temp[1]];
-  //     }
-  //     clearConsole();
-  //     boardCopy.printBoard();
-  //   }else if(key.name === 'left' && ship.segments[0].pos[1] > 0){
-  //     //increment segments left then reprint board
-  //     //replace spaces that were moved with those from original board
-  //     for(let i in ship.segments){
-  //       let segment = ship.segments[i];
-  //       let temp = segment.pos;
-  //       segment.pos[1] -= 1;
-  //       boardCopy.grid[segment.pos[0]][segment.pos[1]] = segment;
-  //       boardCopy.grid[temp[0]][temp[1]] = player.board.grid[temp[0]][temp[1]];
-  //     }
-  //     clearConsole();
-  //     boardCopy.printBoard();
-  //   }else if(key.name === 'down' && ship.segments[ship.length -1].pos[0] < player.board.size - 1){
-  //     //increment segments down then reprint board
-  //     //replace spaces that were moved with those from original board
-  //     for(let i in ship.segments){
-  //       //start from last segment
-  //       let segment = ship.segments[ship.length - i - 1];
-  //       let temp = segment.pos;
-  //       segment.pos[0] += 1;
-  //       boardCopy.grid[segment.pos[0]][segment.pos[1]] = segment;
-  //       boardCopy.grid[temp[0]][temp[1]] = player.board.grid[temp[0]][temp[1]];
-  //     }
-  //     clearConsole();
-  //     boardCopy.printBoard();
-  //   }else if(key.name === 'up' && ship.segments[0].pos[0] > 0){
-  //     //increment segments up then reprint board
-  //     //replace spaces that were moved with those from original board
-  //     for(let i in ship.segments){
-  //       //start from last segment
-  //       let segment = ship.segments[i];
-  //       let temp = segment.pos;
-  //       segment.pos[0] -= 1;
-  //       boardCopy.grid[segment.pos[0]][segment.pos[1]] = segment;
-  //       boardCopy.grid[temp[0]][temp[1]] = player.board.grid[temp[0]][temp[1]];
-  //     }
-  //     clearConsole();
-  //     boardCopy.printBoard();
-  //   }else{
-  //     console.log('These ships are missing that control!')
-  //     //reprint board
-  //   }});
-  //
-  // process.stdin.setRawMode(true);
-  // process.stdin.resume();
-  // }
 
 
 }

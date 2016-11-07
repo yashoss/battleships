@@ -15,7 +15,7 @@ class Board{
     }
     for(let i=0; i<this.size; ++i){
       for(let j=0; j<this.size; ++j){
-        this.grid[i][j] = null;
+        this.grid[i][j] = false;
       }
     }
   }
@@ -23,10 +23,10 @@ class Board{
   cloneBoard(newBoard){
     for(let i=0; i<this.size; ++i){
       for(let j=0; j<this.size; ++j){
-        if (this.grid[i][j] === null){
-          newBoard.grid[i][j] = null;
+        if (!this.grid[i][j]){
+          newBoard.grid[i][j] = false;
         }else{
-          newBoard.grid[i][j] = this.grid[i][j].cloneSegment()
+          newBoard.grid[i][j] = this.grid[i][j]
         }
       }
     }
@@ -48,7 +48,7 @@ class Board{
     for(let i=0; i<this.size; ++i){
       row = " " + i.toString() + " |";
       for(let j=0; j<this.size; ++j){
-        if (this.grid[i][j] === null){
+        if (!this.grid[i][j]){
           row += "   |";
         }else if(this.grid[i][j].hit){
           row += " X |";

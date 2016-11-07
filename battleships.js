@@ -1,5 +1,4 @@
 var readlineSync = require('readline-sync');
-var keypress = require('keypress');
 var Ship = require('./ship.js');
 var Player = require('./player.js');
 var Board = require('./board.js');
@@ -11,8 +10,12 @@ function play(){
   const ships1 = [];
   const ships2 = [];
 
-  const BOARD_SIZE = readlineSync.questionInt('How big do you want your board(7-10)? ');
-  const NUM_SHIPS = readlineSync.questionInt('How many ships do you want(1-5)? ');
+  var BOARD_SIZE = readlineSync.questionInt('How big do you want your board(4-10)? ');
+  while(!(BOARD_SIZE >= 4 && BOARD_SIZE <= 10)  ){
+    console.log("Please enter a number between 4 and 10.")
+    BOARD_SIZE = readlineSync.questionInt('How big do you want your board(4-10)? ');
+  }
+  const NUM_SHIPS = Math.floor(BOARD_SIZE/2);
   for(let i=0; i<NUM_SHIPS; ++i){
     ships1.push(new Ship(i + 2));
     ships2.push(new Ship(i + 2));
@@ -20,12 +23,8 @@ function play(){
 
   player1 = new Player("p1", new Board(BOARD_SIZE, ships1), ships1);
   player2 = new Player("p2", new Board(BOARD_SIZE, ships2), ships2);
-  ship = new Ship(2);
-  console.log(ship);
-  // player1.board.printBoard();
-  // player2.board.printBoard();
-  let clone = player1.board.cloneBoard(new Board(BOARD_SIZE))
-  player1.rotateShip(clone, 2, player1, player1.rotateShip1);
+  readlineSync.question(player1.name + "'s turn to place ships on the board. Press 'enter' when ready.");
+  player1.placeShips(player1);
 
 }
 
