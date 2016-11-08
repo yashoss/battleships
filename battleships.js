@@ -3,8 +3,10 @@ var Ship = require('./lib/ship.js');
 var Player = require('./lib/player.js');
 var Board = require('./lib/board.js');
 var Segment = require('./lib/segment.js');
+var clearConsole = require('./lib/clear_console.js')
 
 function play(){
+  //Instantiate player variables and ships array
   let player1;
   let player2;
   const ships1 = [];
@@ -21,18 +23,24 @@ function play(){
     ships1.push(new Ship(i + 2));
     ships2.push(new Ship(i + 2));
   }
-  //Create players (name, board, array or ships)
+  //Create players (name, board, and ships)
   let name1 = readlineSync.question('Player 1 what is your name? ');
   let name2 = readlineSync.question('Player 2 what is your name? ');
   player1 = new Player(name1, new Board(BOARD_SIZE), ships1);
-  player2 = new Player("p2", new Board(BOARD_SIZE), ships2);
+  player2 = new Player(name2, new Board(BOARD_SIZE), ships2);
   clearConsole();
   console.log("There are " + NUM_SHIPS + " ships to sink.");
+  for(let i=0; i<NUM_SHIPS; ++i){
+    console.log("Ship " + (i + 1) +": length = " + (i + 2) + " symbol = " + ships1[i].symbol);
+  }
   //Set up board
   readlineSync.question(player1.name + "'s turn to place ships on the board. Press 'enter' when ready.");
   player1.placeShips(player1);
   clearConsole();
   console.log("There are " + NUM_SHIPS + " ships to sink.");
+  for(let i=0; i<NUM_SHIPS; ++i){
+    console.log("Ship " + (i + 1) +": length = " + (i + 2) + " symbol = " + ships1[i].symbol);
+  }
   readlineSync.question(player2.name + "'s turn to place ships on the board. Press 'enter' when ready.");
   player2.placeShips(player2);
   clearConsole();
@@ -42,14 +50,17 @@ function play(){
 }
 
 function battle(player1, player2){
+  //Instantiate variables
   let winner = null;
   let currentPlayer = player1;
   let nextPlayer = player2;
   let status;
   let guess;
   while(!winner){
+    //Prevent cheating
     readlineSync.question(currentPlayer.name+ "'s turn to fire a guess. Press 'enter' when ready.");
     clearConsole();
+    //Print game boards
     console.log("X = hit, O = miss");
     console.log("Your Guesses: ");
     nextPlayer.board.printGuessBoard();
@@ -59,6 +70,7 @@ function battle(player1, player2){
     guess = currentPlayer.getGuess();
     status = nextPlayer.markBoard(guess, nextPlayer.board, nextPlayer.ships);
     clearConsole();
+    //Updated guesses + status of guess
     nextPlayer.board.printGuessBoard();
     console.log("That guess " + status);
     if(status === "was a miss!"){
@@ -67,9 +79,11 @@ function battle(player1, player2){
       currentPlayer = nextPlayer;
       nextPlayer = temp;
     }else{
+      //check if won
       winner = checkWin(currentPlayer, nextPlayer);
     }
   }
+  //Print end results of match
   console.log("Final Boards:");
   console.log(player1.name + "'s ships");
   player1.board.printBoard();
@@ -86,14 +100,5 @@ function checkWin(currentPlayer, nextPlayer){
   }
   return currentPlayer;
 }
-
-function clearConsole(){
-  //Moves console view up
-  var lines = process.stdout.getWindowSize()[1];
-  for(var i = 0; i < lines; i++) {
-    console.log('\r\n');
-  }
-}
-
 
 play();
