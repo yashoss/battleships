@@ -1,8 +1,8 @@
 var readlineSync = require('readline-sync');
-var Ship = require('./ship.js');
-var Player = require('./player.js');
-var Board = require('./board.js');
-var Segment = require('./segment.js');
+var Ship = require('./lib/ship.js');
+var Player = require('./lib/player.js');
+var Board = require('./lib/board.js');
+var Segment = require('./lib/segment.js');
 
 function play(){
   let player1;
@@ -22,8 +22,11 @@ function play(){
     ships2.push(new Ship(i + 2));
   }
   //Create players (name, board, array or ships)
-  player1 = new Player("p1", new Board(BOARD_SIZE), ships1);
+  let name1 = readlineSync.question('Player 1 what is your name? ');
+  let name2 = readlineSync.question('Player 2 what is your name? ');
+  player1 = new Player(name1, new Board(BOARD_SIZE), ships1);
   player2 = new Player("p2", new Board(BOARD_SIZE), ships2);
+  clearConsole();
   console.log("There are " + NUM_SHIPS + " ships to sink.");
   //Set up board
   readlineSync.question(player1.name + "'s turn to place ships on the board. Press 'enter' when ready.");
@@ -42,19 +45,22 @@ function battle(player1, player2){
   let winner = null;
   let currentPlayer = player1;
   let nextPlayer = player2;
+  let status;
+  let guess;
   while(!winner){
-    clearConsole();
     readlineSync.question(currentPlayer.name+ "'s turn to fire a guess. Press 'enter' when ready.");
+    clearConsole();
     console.log("X = hit, O = miss");
     console.log("Your Guesses: ");
     nextPlayer.board.printGuessBoard();
     console.log("Your ships: ")
     currentPlayer.board.printBoard();
     console.log("")
-    let guess = currentPlayer.getGuess();
-    let status = nextPlayer.markBoard(guess, nextPlayer.board, nextPlayer.ships);
+    guess = currentPlayer.getGuess();
+    status = nextPlayer.markBoard(guess, nextPlayer.board, nextPlayer.ships);
+    clearConsole();
+    nextPlayer.board.printGuessBoard();
     console.log("That guess " + status);
-    setTimeout(function(){nextPlayer.board.printGuessBoard()}, 1000);
     if(status === "was a miss!"){
       //Next players turn
       let temp = currentPlayer;
