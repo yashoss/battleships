@@ -4,11 +4,11 @@ class Board{
   //initialize size of board
   constructor(s = 10, ships){
     this.size = s;
-    this.ships = ships;
     this.grid = new Array(this.size);
     this.populateGrid();
   }
 
+  //Create a grid with sizexsize matrix with false values
   populateGrid(){
     for(let i=0; i<this.size; ++i){
       this.grid[i]=new Array(this.size);
@@ -20,6 +20,7 @@ class Board{
     }
   }
 
+  //Copy the board to prevent mutability of original board
   cloneBoard(newBoard){
     for(let i=0; i<this.size; ++i){
       for(let j=0; j<this.size; ++j){
@@ -34,7 +35,7 @@ class Board{
     return newBoard;
   }
 
-  //Print board to console
+  //Print current player's board to console
   printBoard(){
     //Prints the top of the grid
     let top = "   |";
@@ -52,12 +53,39 @@ class Board{
           row += "   |";
         }else if(this.grid[i][j].hit){
           row += " X |";
+        }else if(this.grid[i][j] === true){
+          row += " O |";
         }else{
           row += " " + this.grid[i][j].symbol + " |";
         }
       }
       console.log(row.bgBlue.underline);
     }
+  }
+
+  //Print the guessed board
+  printGuessBoard(){
+    let top = "   |";
+    for(let i=0; i<this.size; ++i){
+      top += " " + String.fromCharCode("A".charCodeAt(0) + i) + " |";
+    }
+    console.log(top.bgBlue.underline);
+
+    let row;
+    for(let i=0; i<this.size; ++i){
+      row = " " + i.toString() + " |";
+      for(let j=0; j<this.size; ++j){
+        if (!this.grid[i][j]){
+          row += "   |";
+        }else if(this.grid[i][j].hit){
+          row += " X |";
+        }else{
+          row += " O |";
+        }
+      }
+      console.log(row.bgBlue.underline);
+    }
+
   }
 
 
@@ -72,8 +100,3 @@ function clearConsole(){
 }
 
 module.exports = Board;
-// board = new Board(10);
-// clearConsole();
-// board.printBoard();
-// console.log("\n");
-// board.printBoard();

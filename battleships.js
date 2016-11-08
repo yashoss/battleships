@@ -9,39 +9,84 @@ function play(){
   let player2;
   const ships1 = [];
   const ships2 = [];
-
+  //Get board size from user and validate
   var BOARD_SIZE = readlineSync.questionInt('How big do you want your board(4-10)? ');
   while(!(BOARD_SIZE >= 4 && BOARD_SIZE <= 10)  ){
     console.log("Please enter a number between 4 and 10.")
     BOARD_SIZE = readlineSync.questionInt('How big do you want your board(4-10)? ');
   }
+  //Create ships
   const NUM_SHIPS = Math.floor(BOARD_SIZE/2);
   for(let i=0; i<NUM_SHIPS; ++i){
     ships1.push(new Ship(i + 2));
     ships2.push(new Ship(i + 2));
   }
-
-  player1 = new Player("p1", new Board(BOARD_SIZE, ships1), ships1);
-  player2 = new Player("p2", new Board(BOARD_SIZE, ships2), ships2);
+  //Create players (name, board, array or ships)
+  player1 = new Player("p1", new Board(BOARD_SIZE), ships1);
+  player2 = new Player("p2", new Board(BOARD_SIZE), ships2);
+  console.log("There are " + NUM_SHIPS + " ships to sink.");
+  //Set up board
   readlineSync.question(player1.name + "'s turn to place ships on the board. Press 'enter' when ready.");
   player1.placeShips(player1);
+  clearConsole();
+  console.log("There are " + NUM_SHIPS + " ships to sink.");
+  readlineSync.question(player2.name + "'s turn to place ships on the board. Press 'enter' when ready.");
+  player2.placeShips(player2);
+  clearConsole();
+  //Begin guessing
+  battle(player1, player2);
 
 }
 
-function placeShips(player){
-  keypress(process.stdin);
-
-  // listen for the "keypress" event
-  process.stdin.on('keypress', function (ch, key) {
-    console.log('got "keypress"', key);
-    if (key.name == 'return') {
-      process.stdin.pause();
+function battle(player1, player2){
+  let winner = null;
+  let currentPlayer = player1;
+  let nextPlayer = player2;
+  while(!winner){
+    clearConsole();
+    readlineSync.question(currentPlayer.name+ "'s turn to fire a guess. Press 'enter' when ready.");
+    console.log("X = hit, O = miss");
+    console.log("Your Guesses: ");
+    nextPlayer.board.printGuessBoard();
+    console.log("Your ships: ")
+    currentPlayer.board.printBoard();
+    console.log("")
+    let guess = currentPlayer.getGuess();
+    let status = nextPlayer.markBoard(guess, nextPlayer.board, nextPlayer.ships);
+    console.log("That guess " + status);
+    setTimeout(function(){nextPlayer.board.printGuessBoard()}, 1000);
+    if(status === "was a miss!"){
+      //Next players turn
+      let temp = currentPlayer;
+      currentPlayer = nextPlayer;
+      nextPlayer = temp;
+    }else{
+      winner = checkWin(currentPlayer, nextPlayer);
     }
-  });
+  }
+  console.log("Final Boards:");
+  console.log(player1.name + "'s ships");
+  player1.board.printBoard();
+  console.log(player2.name + "'s ships");
+  player2.board.printBoard();
+  console.log("Congratulations " + winner.name + " you won!")
+}
 
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
+function checkWin(currentPlayer, nextPlayer){
+  for(let i=0; i<nextPlayer.ships.length; ++i){
+    if(!nextPlayer.ships[i].sunk){
+      return null;
+    }
+  }
+  return currentPlayer;
+}
 
+function clearConsole(){
+  //Moves console view up
+  var lines = process.stdout.getWindowSize()[1];
+  for(var i = 0; i < lines; i++) {
+    console.log('\r\n');
+  }
 }
 
 
